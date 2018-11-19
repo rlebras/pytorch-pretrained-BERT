@@ -588,8 +588,8 @@ def main():
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
             tr_loss = 0
             nb_tr_examples, nb_tr_steps = 0, 0
-            for step, batch in enumerate(tqdm(train_dataloader, desc="Iteration/ Training "
-                                                                     "Accuracy: {}".format(tr_loss))):
+            status_tqdm = tqdm(train_dataloader, desc="Iteration")
+            for step, batch in enumerate(status_tqdm):
                 batch = tuple(t.to(device) for t in batch)
                 input_ids, input_mask, segment_ids, label_ids = batch
                 loss, _ = model(input_ids, segment_ids, input_mask, label_ids)
@@ -623,7 +623,8 @@ def main():
                         optimizer.step()
                     model.zero_grad()
                     global_step += 1
-                logging.info("Training Loss: {}".format(tr_loss))
+                status_tqdm.set_description_str("Iteration / Training Acc: {}".format((tr_loss /
+                                                                                       len(batch))))
 
     if args.do_eval:
         eval_examples = processor.get_dev_examples(args.data_dir)
