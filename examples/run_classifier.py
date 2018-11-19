@@ -33,6 +33,7 @@ from torch.utils.data.distributed import DistributedSampler
 from pytorch_pretrained_bert.tokenization import printable_text, convert_to_unicode, BertTokenizer
 from pytorch_pretrained_bert.modeling import BertForSequenceClassification
 from pytorch_pretrained_bert.optimization import BertAdam
+import json
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s', 
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -95,6 +96,58 @@ class DataProcessor(object):
             for line in reader:
                 lines.append(line)
             return lines
+
+    @classmethod
+    def _read_jsonl(cls, input_file, quotechar=None):
+        """Reads a tab separated value file."""
+        records = []
+        with open(input_file, "r") as f:
+            for line in f:
+                obj = json.loads(line)
+                records.append(obj)
+        return records
+
+
+class AnliProcessor(DataProcessor):
+    """Processor for the MRPC data set (GLUE version)."""
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.jsonl")))
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "train.jsonl")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "valid.jsonl")), "dev")
+
+    def get_labels(self):
+        """See base class."""
+        return ["1", "2"]
+
+    def _create_examples(self, records, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, record) in enumerate(records):
+            if i == 0:
+                continue
+            guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
+
+            beginning = record['InputSentence1']
+            ending = record['InputSentence5']
+
+            option1 = record['RandomMiddleSentenceQuiz1']
+            option2 = record['RandomMiddleSentenceQuiz2']
+
+            answer = record['AnswerRightEnding']
+
+            text_a = convert_to_unicode(' '.join([beginning, option1, ending]))
+            text_b = convert_to_unicode(' '.join([beginning, option2, ending]))
+            label = convert_to_unicode(answer)
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+        return examples
 
 
 class MrpcProcessor(DataProcessor):
@@ -430,6 +483,7 @@ def main():
         "cola": ColaProcessor,
         "mnli": MnliProcessor,
         "mrpc": MrpcProcessor,
+        "anli": AnliProcessor
     }
 
     if args.local_rank == -1 or args.no_cuda:
