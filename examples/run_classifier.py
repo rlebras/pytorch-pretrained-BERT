@@ -622,7 +622,7 @@ def main():
                         optimizer.step()
                     model.zero_grad()
                     global_step += 1
-            logging.info("Training Loss: {}".format(tr_loss))
+                logging.info("Training Loss: {}".format(tr_loss))
 
     if args.do_eval:
         eval_examples = processor.get_dev_examples(args.data_dir)
