@@ -624,7 +624,7 @@ def main():
                     model.zero_grad()
                     global_step += 1
                 status_tqdm.set_description_str("Iteration / Training Acc: {}".format((tr_loss /
-                                                                                       len(batch))))
+                                                                                       nb_tr_examples)))
 
     if args.do_eval:
         eval_examples = processor.get_dev_examples(args.data_dir)
