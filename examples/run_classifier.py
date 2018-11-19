@@ -109,7 +109,7 @@ class DataProcessor(object):
 
 
 class AnliProcessor(DataProcessor):
-    """Processor for the MRPC data set (GLUE version)."""
+    """Processor for the ANLI data set."""
 
     def get_train_examples(self, data_dir):
         """See base class."""
