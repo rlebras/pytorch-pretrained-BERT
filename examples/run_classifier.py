@@ -761,7 +761,7 @@ def main():
 
     global_step = 0
     if args.do_train:
-        if task_name.lower() == "anli":
+        if task_name.lower().startswith("anli"):
             train_features = convert_examples_to_features_mc(
                 train_examples, label_list, args.max_seq_length, tokenizer)
         else:
@@ -826,7 +826,7 @@ def main():
 
     if args.do_eval:
         eval_examples = processor.get_dev_examples(args.data_dir)
-        if task_name == "anli":
+        if task_name.lower().startswith("anli"):
             eval_features = convert_examples_to_features_mc(
                 eval_examples, label_list, args.max_seq_length, tokenizer)
         else:
