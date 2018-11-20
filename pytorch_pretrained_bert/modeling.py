@@ -924,7 +924,7 @@ class BertForMultipleChoice(PreTrainedBertModel):
         super(BertForMultipleChoice, self).__init__(config)
         self.bert = BertModel(config)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.classifier = nn.Linear(config.hidden_size, num_labels)
+        self.classifier = nn.Linear(config.hidden_size, 1)
         self.apply(self.init_bert_weights)
         self.num_options = num_options
         self.num_labels = num_labels
@@ -935,7 +935,7 @@ class BertForMultipleChoice(PreTrainedBertModel):
         logits = self.classifier(pooled_output)
 
         if labels is not None:
-            logits = logits.view(-1, self.num_options, self.num_labels)
+            logits = logits.view(-1, self.num_options)
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits, labels)
             return loss, logits
