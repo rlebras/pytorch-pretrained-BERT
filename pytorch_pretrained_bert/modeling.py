@@ -927,6 +927,7 @@ class BertForMultipleChoice(PreTrainedBertModel):
         self.classifier = nn.Linear(config.hidden_size, num_labels)
         self.apply(self.init_bert_weights)
         self.num_options = num_options
+        self.num_labels = num_labels
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
         _, pooled_output = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
@@ -934,7 +935,7 @@ class BertForMultipleChoice(PreTrainedBertModel):
         logits = self.classifier(pooled_output)
 
         if labels is not None:
-            logits = logits.view(-1, self.num_options)
+            logits = logits.view(-1, self.num_options, self.num_labels)
             loss_fct = CrossEntropyLoss()
             loss = loss_fct(logits, labels)
             return loss, logits
