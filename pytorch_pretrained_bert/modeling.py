@@ -930,6 +930,16 @@ class BertForMultipleChoice(PreTrainedBertModel):
         self.num_labels = num_labels
 
     def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
+
+        batch_size = input_ids.size(0)
+        num_options = input_ids.size(1)
+
+        input_ids = input_ids.view(batch_size * num_options, -1)
+        if token_type_ids is not None:
+            token_type_ids = token_type_ids.view(batch_size * num_options, -1)
+        if attention_mask is not None:
+            attention_mask = attention_mask.view(batch_size * num_options, -1)
+
         _, pooled_output = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
         pooled_output = self.dropout(pooled_output)
         logits = self.classifier(pooled_output)
