@@ -211,7 +211,7 @@ class AnliProcessor3Option(DataProcessor):
 
             option1 = record['RandomMiddleSentenceQuiz1']
             option2 = record['RandomMiddleSentenceQuiz2']
-            option3 = record['RandomMiddleSentenceQuiz2']
+            option3 = record['RandomMiddleSentenceQuiz3']
 
             answer = int(record['AnswerRightEnding']) - 1
 
