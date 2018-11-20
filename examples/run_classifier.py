@@ -766,7 +766,7 @@ def main():
                         optimizer.step()
                     model.zero_grad()
                     global_step += 1
-                status_tqdm.set_description_str("Iteration / Training Acc: {}".format((tr_loss /
+                status_tqdm.set_description_str("Iteration / Training Loss: {}".format((tr_loss /
                                                                                        nb_tr_examples)))
 
     if args.do_eval:
