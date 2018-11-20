@@ -180,6 +180,60 @@ class AnliProcessor(DataProcessor):
         return examples
 
 
+class AnliProcessor3Option(DataProcessor):
+    """Processor for the ANLI data set."""
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.jsonl")))
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "train.jsonl")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "valid.jsonl")), "dev")
+
+    def get_labels(self):
+        """See base class."""
+        return ["0", "1", "2"]
+
+    def _create_examples(self, records, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, record) in enumerate(records):
+            if i == 0:
+                continue
+            guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
+
+            beginning = record['InputSentence1']
+            ending = record['InputSentence5']
+
+            option1 = record['RandomMiddleSentenceQuiz1']
+            option2 = record['RandomMiddleSentenceQuiz2']
+            option3 = record['RandomMiddleSentenceQuiz2']
+
+            answer = int(record['AnswerRightEnding']) - 1
+
+            option1_context = convert_to_unicode(' '.join([beginning, option1]))
+            option2_context = convert_to_unicode(' '.join([beginning, option2]))
+            option3_context = convert_to_unicode(' '.join([beginning, option3]))
+
+            label = convert_to_unicode(str(answer))
+
+            text_a = [option1_context, option2_context, option3_context]
+            text_b = [ending, ending, ending]
+
+            examples.append(
+                InputExampleWithList(guid=guid,
+                                     text_a=text_a,
+                                     text_b=text_b,
+                                     label=label
+                                     )
+            )
+        return examples
+
+
 class MrpcProcessor(DataProcessor):
     """Processor for the MRPC data set (GLUE version)."""
 
@@ -619,7 +673,8 @@ def main():
         "cola": ColaProcessor,
         "mnli": MnliProcessor,
         "mrpc": MrpcProcessor,
-        "anli": AnliProcessor
+        "anli": AnliProcessor,
+        "anli3": AnliProcessor3Option
     }
 
     if args.local_rank == -1 or args.no_cuda:
