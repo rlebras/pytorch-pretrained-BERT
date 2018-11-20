@@ -380,21 +380,22 @@ def convert_examples_to_features_mc(examples, label_list, max_seq_length, tokeni
 
     features = []
     for (ex_index, example) in enumerate(examples):
-        tokens_a = tokenizer.tokenize(example.text_a)
+        tokens_a = [tokenizer.tokenize(t) for t in example.text_a]
 
         tokens_b = None
         if example.text_b:
-            tokens_b = tokenizer.tokenize(example.text_b)
+            tokens_b = [tokenizer.tokenize(t) for t in example.text_b]
 
         if tokens_b:
             # Modifies `tokens_a` and `tokens_b` in place so that the total
             # length is less than the specified length.
             # Account for [CLS], [SEP], [SEP] with "- 3"
-            _truncate_seq_pair(tokens_a, tokens_b, max_seq_length - 3)
+            for ta, tb in zip(tokens_a, tokens_b):
+                _truncate_seq_pair(ta, tb, max_seq_length - 3)
         else:
             # Account for [CLS] and [SEP] with "- 2"
-            if len(tokens_a) > max_seq_length - 2:
-                tokens_a = tokens_a[0:(max_seq_length - 2)]
+            for idx, ta in enumerate(tokens_a):
+                tokens_a[idx] = tokens_a[idx][0:(max_seq_length - 2)]
 
         # The convention in BERT is:
         # (a) For sequence pairs:
