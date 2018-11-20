@@ -18,22 +18,22 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import csv
-import os
-import logging
 import argparse
+import csv
+import json
+import logging
+import os
 import random
-from tqdm import tqdm, trange
 
 import numpy as np
 import torch
 from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
+from tqdm import tqdm, trange
 
-from pytorch_pretrained_bert.tokenization import printable_text, convert_to_unicode, BertTokenizer
-from pytorch_pretrained_bert.modeling import BertForSequenceClassification
+from pytorch_pretrained_bert.modeling import BertForMultipleChoice
 from pytorch_pretrained_bert.optimization import BertAdam
-import json
+from pytorch_pretrained_bert.tokenization import printable_text, convert_to_unicode, BertTokenizer
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s', 
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -124,7 +124,7 @@ class AnliProcessor(DataProcessor):
 
     def get_labels(self):
         """See base class."""
-        return ["1", "2"]
+        return ["0", "1"]
 
     def _create_examples(self, records, set_type):
         """Creates examples for the training and dev sets."""
@@ -140,13 +140,17 @@ class AnliProcessor(DataProcessor):
             option1 = record['RandomMiddleSentenceQuiz1']
             option2 = record['RandomMiddleSentenceQuiz2']
 
-            answer = record['AnswerRightEnding']
+            answer = int(record['AnswerRightEnding']) - 1
 
-            text_a = convert_to_unicode(' '.join([beginning, option1, ending]))
-            text_b = convert_to_unicode(' '.join([beginning, option2, ending]))
-            label = convert_to_unicode(answer)
+            option1_context = convert_to_unicode(' '.join([beginning, option1]))
+            option2_context = convert_to_unicode(' '.join([beginning, option2]))
+
+            label = convert_to_unicode(str(answer))
             examples.append(
-                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
+                InputExample(guid=guid, text_a=option1_context, text_b=ending, label=label))
+            examples.append(
+                InputExample(guid=guid, text_a=option2_context, text_b=ending, label=label))
+
         return examples
 
 
@@ -536,7 +540,7 @@ def main():
             len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
-    model = BertForSequenceClassification.from_pretrained(args.bert_model, len(label_list))
+    model = BertForMultipleChoice.from_pretrained(args.bert_model, len(label_list))
     if args.fp16:
         model.half()
     model.to(device)
