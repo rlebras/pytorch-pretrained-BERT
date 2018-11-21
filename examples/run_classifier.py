@@ -639,6 +639,10 @@ def main():
                         default=None,
                         type=str,
                         help="File to run prediction on.")
+    parser.add_argument("--output_file_for_pred",
+                        default=None,
+                        type=str,
+                        help="File to output predictions into.")
     parser.add_argument("--train_batch_size",
                         default=32,
                         type=int,
@@ -886,7 +890,7 @@ def main():
 
         logger.info("***** Predicting ... *****".format(model_save_path))
 
-        for input_ids, input_mask, segment_ids, label_ids in tqdm.tqdm(eval_dataloader):
+        for input_ids, input_mask, segment_ids, label_ids in tqdm(eval_dataloader):
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
@@ -923,14 +927,13 @@ def main():
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        output_predictions_file = os.path.join(args.output_dir, "eval_predictions.jsonl")
         pred_examples = read_jsonl_lines(args.input_file_for_pred)
 
         logger.info("***** Eval predictions *****")
         for record, pred in zip(pred_examples, eval_predictions):
             record['bert_prediction'] = pred
 
-        write_items([json.dumps(r) for r in pred_examples], output_predictions_file)
+        write_items([json.dumps(r) for r in pred_examples], args.output_file_for_pred)
 
 
 if __name__ == "__main__":
