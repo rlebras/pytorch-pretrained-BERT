@@ -11,7 +11,7 @@ import tempfile
 import json
 from urllib.parse import urlparse
 from pathlib import Path
-from typing import Optional, Tuple, Union, IO, Callable, Set
+from typing import Optional, Tuple, Union, IO, Callable, Set, List
 from hashlib import sha256
 from functools import wraps
 
@@ -231,3 +231,16 @@ def get_file_extension(path: str, dot=True, lower: bool = True):
     ext = os.path.splitext(path)[1]
     ext = ext if dot else ext[1:]
     return ext.lower() if lower else ext
+
+
+def read_jsonl_lines(input_file: str) -> List[dict]:
+    with open(input_file) as f:
+        lines = f.readlines()
+        return [json.loads(l.strip()) for l in lines]
+
+
+def write_items(items: List[str], output_file):
+    with open(output_file, 'w') as f:
+        for concept in items:
+            f.write(concept + "\n")
+    f.close()

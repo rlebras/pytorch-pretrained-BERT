@@ -31,11 +31,12 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
+from pytorch_pretrained_bert.file_utils import read_jsonl_lines, write_items
 from pytorch_pretrained_bert.modeling import BertForMultipleChoice
 from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.tokenization import printable_text, convert_to_unicode, BertTokenizer
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s', 
+logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
                     level = logging.INFO)
 logger = logging.getLogger(__name__)
@@ -148,8 +149,7 @@ class AnliProcessor(DataProcessor):
 
     def get_examples_from_file(self, input_file):
         return self._create_examples(
-            self._read_jsonl(input_file, "to-pred")
-        )
+            self._read_jsonl(input_file), "to-pred")
 
     def get_labels(self):
         """See base class."""
@@ -668,14 +668,14 @@ def main():
                         type=int,
                         default=-1,
                         help="local_rank for distributed training on gpus")
-    parser.add_argument('--seed', 
-                        type=int, 
+    parser.add_argument('--seed',
+                        type=int,
                         default=42,
                         help="random seed for initialization")
     parser.add_argument('--gradient_accumulation_steps',
                         type=int,
                         default=1,
-                        help="Number of updates steps to accumualte before performing a backward/update pass.")                       
+                        help="Number of updates steps to accumualte before performing a backward/update pass.")
     parser.add_argument('--optimize_on_cpu',
                         default=False,
                         action='store_true',
@@ -923,11 +923,15 @@ def main():
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        output_predictions_file = os.path.join(args.output_dir, "eval_predictions.txt")
-        with open(output_predictions_file, "w") as w:
-            logger.info("***** Eval predictions *****")
-            for p in eval_predictions:
-                w.write("{}\n".format(p))
+        output_predictions_file = os.path.join(args.output_dir, "eval_predictions.jsonl")
+        pred_examples = read_jsonl_lines(args.input_file_for_pred)
+
+        logger.info("***** Eval predictions *****")
+        for record, pred in zip(pred_examples, eval_predictions):
+            record['bert_prediction'] = pred
+
+        write_items([json.dumps(r) for r in pred_examples], output_predictions_file)
+
 
 if __name__ == "__main__":
     main()
