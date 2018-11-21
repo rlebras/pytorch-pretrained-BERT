@@ -881,7 +881,7 @@ def main():
 
         logger.info("***** Predicting ... *****".format(model_save_path))
 
-        for input_ids, input_mask, segment_ids, label_ids in eval_dataloader:
+        for input_ids, input_mask, segment_ids, label_ids in tqdm.tqdm(eval_dataloader):
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
             segment_ids = segment_ids.to(device)
