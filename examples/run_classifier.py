@@ -194,6 +194,11 @@ class AnliProcessor3Option(DataProcessor):
         return self._create_examples(
             self._read_jsonl(os.path.join(data_dir, "valid.jsonl")), "dev")
 
+    def get_test_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "test.jsonl")), "test")
+
     def get_labels(self):
         """See base class."""
         return ["0", "1", "2"]
@@ -705,7 +710,7 @@ def main():
     if not args.do_train and not args.do_eval:
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
-    if os.path.exists(args.output_dir) and os.listdir(args.output_dir):
+    if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train:
         raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
     os.makedirs(args.output_dir, exist_ok=True)
 
@@ -856,6 +861,9 @@ def main():
         model.eval()
         eval_loss, eval_accuracy = 0, 0
         nb_eval_steps, nb_eval_examples = 0, 0
+
+        eval_predictions = []
+
         for input_ids, input_mask, segment_ids, label_ids in eval_dataloader:
             input_ids = input_ids.to(device)
             input_mask = input_mask.to(device)
@@ -868,6 +876,8 @@ def main():
             logits = logits.detach().cpu().numpy()
             label_ids = label_ids.to('cpu').numpy()
             tmp_eval_accuracy = accuracy(logits, label_ids)
+
+            eval_predictions.extend(np.argmax(logits, axis=1).tolist())
 
             eval_loss += tmp_eval_loss.mean().item()
             eval_accuracy += tmp_eval_accuracy
@@ -889,6 +899,12 @@ def main():
             for key in sorted(result.keys()):
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
+
+        output_predictions_file = os.path.join(args.output_dir, "eval_predictions.txt")
+        with open(output_predictions_file, "w") as w:
+            logger.info("***** Eval predictions *****")
+            for p in eval_predictions:
+                w.write("{}\n".format(p))
 
 if __name__ == "__main__":
     main()
