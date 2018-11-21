@@ -146,6 +146,11 @@ class AnliProcessor(DataProcessor):
         return self._create_examples(
             self._read_jsonl(os.path.join(data_dir, "valid.jsonl")), "dev")
 
+    def get_examples_from_file(self, input_file):
+        return self._create_examples(
+            self._read_jsonl(input_file, "to-pred")
+        )
+
     def get_labels(self):
         """See base class."""
         return ["0", "1"]
