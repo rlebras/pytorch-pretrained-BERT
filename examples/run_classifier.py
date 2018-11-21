@@ -932,6 +932,7 @@ def main():
         logger.info("***** Eval predictions *****")
         for record, pred in zip(pred_examples, eval_predictions):
             record['bert_prediction'] = pred
+            record['bert_correct'] = pred == (int(record['AnswerRightEnding']) - 1)
 
         write_items([json.dumps(r) for r in pred_examples], args.output_file_for_pred)
 
