@@ -207,8 +207,6 @@ class AnliProcessor3Option(DataProcessor):
         """Creates examples for the training and dev sets."""
         examples = []
         for (i, record) in enumerate(records):
-            if i == 0:
-                continue
             guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
 
             beginning = record['InputSentence1']
