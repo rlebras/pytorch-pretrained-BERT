@@ -767,7 +767,7 @@ def main():
     global_step = 0
 
     model_save_path = os.path.join(args.output_dir, "bert-finetuned.model")
-
+    tr_loss = None
     if args.do_train:
         if task_name.lower().startswith("anli"):
             train_features = convert_examples_to_features_mc(
@@ -891,7 +891,8 @@ def main():
         result = {'eval_loss': eval_loss,
                   'eval_accuracy': eval_accuracy,
                   'global_step': global_step,
-                  'loss': tr_loss/nb_tr_steps}
+                  'loss': tr_loss/nb_tr_steps if tr_loss is not None else 0.0
+                  }
 
         output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
         with open(output_eval_file, "w") as writer:
