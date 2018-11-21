@@ -199,6 +199,11 @@ class AnliProcessor3Option(DataProcessor):
         return self._create_examples(
             self._read_jsonl(os.path.join(data_dir, "test.jsonl")), "test")
 
+    def get_examples_from_file(self, input_file):
+        return self._create_examples(
+            self._read_jsonl(input_file, "to-pred")
+        )
+
     def get_labels(self):
         """See base class."""
         return ["0", "1", "2"]
@@ -621,6 +626,14 @@ def main():
                         default=False,
                         action='store_true',
                         help="Whether to run eval on the dev set.")
+    parser.add_argument("--do_predict",
+                        default=False,
+                        action='store_true',
+                        help="Whether to run prediction on a given dataset.")
+    parser.add_argument("--input_file_for_pred",
+                        default=None,
+                        type=str,
+                        help="File to run prediction on.")
     parser.add_argument("--train_batch_size",
                         default=32,
                         type=int,
@@ -833,7 +846,10 @@ def main():
         torch.save(model, model_save_path)
 
     if args.do_eval:
-        eval_examples = processor.get_dev_examples(args.data_dir)
+        if args.do_predict and args.input_file_for_pred is not None:
+            eval_examples = processor.get_examples_from_file(args.input_file_for_pred)
+        else:
+            eval_examples = processor.get_dev_examples(args.data_dir)
         if task_name.lower().startswith("anli"):
             eval_features = convert_examples_to_features_mc(
                 eval_examples, label_list, args.max_seq_length, tokenizer)
