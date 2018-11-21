@@ -760,6 +760,9 @@ def main():
                          t_total=num_train_steps)
 
     global_step = 0
+
+    model_save_path = os.path.join(args.output_dir, "bert-finetuned.model")
+
     if args.do_train:
         if task_name.lower().startswith("anli"):
             train_features = convert_examples_to_features_mc(
@@ -824,6 +827,8 @@ def main():
                 status_tqdm.set_description_str("Iteration / Training Loss: {}".format((tr_loss /
                                                                                        nb_tr_examples)))
 
+        torch.save(model, model_save_path)
+
     if args.do_eval:
         eval_examples = processor.get_dev_examples(args.data_dir)
         if task_name.lower().startswith("anli"):
@@ -845,6 +850,8 @@ def main():
         else:
             eval_sampler = DistributedSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
+
+        model = torch.load(model_save_path)
 
         model.eval()
         eval_loss, eval_accuracy = 0, 0
