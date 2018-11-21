@@ -854,6 +854,7 @@ def main():
             eval_sampler = DistributedSampler(eval_data)
         eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
 
+        logger.info("***** Loading model from: {} *****".format(model_save_path))
         model = torch.load(model_save_path)
 
         model.eval()
@@ -861,6 +862,8 @@ def main():
         nb_eval_steps, nb_eval_examples = 0, 0
 
         eval_predictions = []
+
+        logger.info("***** Predicting ... *****".format(model_save_path))
 
         for input_ids, input_mask, segment_ids, label_ids in eval_dataloader:
             input_ids = input_ids.to(device)
