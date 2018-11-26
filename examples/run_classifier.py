@@ -31,6 +31,7 @@ from torch.utils.data import TensorDataset, DataLoader, RandomSampler, Sequentia
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
+from examples.run_squad import _compute_softmax
 from pytorch_pretrained_bert.file_utils import read_jsonl_lines, write_items
 from pytorch_pretrained_bert.modeling import BertForMultipleChoice
 from pytorch_pretrained_bert.optimization import BertAdam
@@ -885,6 +886,7 @@ def main():
         nb_eval_steps, nb_eval_examples = 0, 0
 
         eval_predictions = []
+        eval_pred_probs = []
 
         logger.info("***** Predicting ... *****".format(model_save_path))
 
@@ -902,6 +904,8 @@ def main():
             tmp_eval_accuracy = accuracy(logits, label_ids)
 
             eval_predictions.extend(np.argmax(logits, axis=1).tolist())
+
+            eval_pred_probs.append(_compute_softmax(logits))
 
             eval_loss += tmp_eval_loss.mean().item()
             eval_accuracy += tmp_eval_accuracy
@@ -928,9 +932,10 @@ def main():
         pred_examples = read_jsonl_lines(args.input_file_for_pred)
 
         logger.info("***** Eval predictions *****")
-        for record, pred in zip(pred_examples, eval_predictions):
+        for record, pred, probs in zip(pred_examples, eval_predictions, eval_pred_probs):
             record['bert_prediction'] = pred
             record['bert_correct'] = pred == (int(record['AnswerRightEnding']) - 1)
+            record['bert_pred_probs'] = probs
 
         write_items([json.dumps(r) for r in pred_examples], args.output_file_for_pred)
 
