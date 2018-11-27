@@ -905,7 +905,7 @@ def main():
 
             eval_predictions.extend(np.argmax(logits, axis=1).tolist())
 
-            eval_pred_probs.append(_compute_softmax(logits))
+            eval_pred_probs.extend([_compute_softmax(list(l)) for l in logits])
 
             eval_loss += tmp_eval_loss.mean().item()
             eval_accuracy += tmp_eval_accuracy
