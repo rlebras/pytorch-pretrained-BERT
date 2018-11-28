@@ -37,9 +37,9 @@ from pytorch_pretrained_bert.modeling import BertForMultipleChoice
 from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.tokenization import printable_text, convert_to_unicode, BertTokenizer
 
-logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
-                    datefmt = '%m/%d/%Y %H:%M:%S',
-                    level = logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
+                    datefmt='%m/%d/%Y %H:%M:%S',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -106,8 +106,8 @@ class InputExampleWithListFourFields(object):
         """
         assert isinstance(text_a, list)
         assert isinstance(text_b, list)
-        assert isinstance(text_c, list)
-        assert isinstance(text_d, list)
+        assert text_c is None or isinstance(text_c, list)
+        assert text_d is None or isinstance(text_d, list)
         assert len(text_a) == len(text_b) == len(text_c) == len(text_d)
 
         self.guid = guid
@@ -205,11 +205,13 @@ class AnliProcessor(DataProcessor):
 
             label = convert_to_unicode(str(answer))
             examples.append(
-                InputExampleWithList(guid=guid,
-                                     text_a=[option1_context, option2_context],
-                                     text_b=[ending, ending],
-                                     label=label
-                                     )
+                InputExampleWithListFourFields(guid=guid,
+                                               text_a=[option1_context, option2_context],
+                                               text_b=[ending, ending],
+                                               text_c=None,
+                                               text_d=None,
+                                               label=label
+                                               )
             )
         return examples
 
@@ -520,18 +522,18 @@ def convert_examples_to_features(examples, label_list, max_seq_length, tokenizer
             logger.info("*** Example ***")
             logger.info("guid: %s" % (example.guid))
             logger.info("tokens: %s" % " ".join(
-                    [printable_text(x) for x in tokens]))
+                [printable_text(x) for x in tokens]))
             logger.info("input_ids: %s" % " ".join([str(x) for x in input_ids]))
             logger.info("input_mask: %s" % " ".join([str(x) for x in input_mask]))
             logger.info(
-                    "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
+                "segment_ids: %s" % " ".join([str(x) for x in segment_ids]))
             logger.info("label: %s (id = %d)" % (example.label, label_id))
 
         features.append(
-                InputFeatures(input_ids=input_ids,
-                              input_mask=input_mask,
-                              segment_ids=segment_ids,
-                              label_id=label_id))
+            InputFeatures(input_ids=input_ids,
+                          input_mask=input_mask,
+                          segment_ids=segment_ids,
+                          label_id=label_id))
     return features
 
 
@@ -675,22 +677,26 @@ def accuracy(out, labels):
     outputs = np.argmax(out, axis=1)
     return np.sum(outputs == labels)
 
+
 def copy_optimizer_params_to_model(named_params_model, named_params_optimizer):
     """ Utility function for optimize_on_cpu and 16-bits training.
         Copy the parameters optimized on CPU/RAM back to the model on GPU
     """
-    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer, named_params_model):
+    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer,
+                                                                  named_params_model):
         if name_opti != name_model:
             logger.error("name_opti != name_model: {} {}".format(name_opti, name_model))
             raise ValueError
         param_model.data.copy_(param_opti.data)
+
 
 def set_optimizer_params_grad(named_params_optimizer, named_params_model, test_nan=False):
     """ Utility function for optimize_on_cpu and 16-bits training.
         Copy the gradient of the GPU parameters to the CPU/RAMM copy of the model
     """
     is_nan = False
-    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer, named_params_model):
+    for (name_opti, param_opti), (name_model, param_model) in zip(named_params_optimizer,
+                                                                  named_params_model):
         if name_opti != name_model:
             logger.error("name_opti != name_model: {} {}".format(name_opti, name_model))
             raise ValueError
@@ -698,11 +704,13 @@ def set_optimizer_params_grad(named_params_optimizer, named_params_model, test_n
             if test_nan and torch.isnan(param_model.grad).sum() > 0:
                 is_nan = True
             if param_opti.grad is None:
-                param_opti.grad = torch.nn.Parameter(param_opti.data.new().resize_(*param_opti.data.size()))
+                param_opti.grad = torch.nn.Parameter(
+                    param_opti.data.new().resize_(*param_opti.data.size()))
             param_opti.grad.data.copy_(param_model.grad.data)
         else:
             param_opti.grad = None
     return is_nan
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -824,12 +832,13 @@ def main():
         torch.distributed.init_process_group(backend='nccl')
         if args.fp16:
             logger.info("16-bits training currently not supported in distributed training")
-            args.fp16 = False # (see https://github.com/pytorch/pytorch/pull/13496)
-    logger.info("device %s n_gpu %d distributed training %r", device, n_gpu, bool(args.local_rank != -1))
+            args.fp16 = False  # (see https://github.com/pytorch/pytorch/pull/13496)
+    logger.info("device %s n_gpu %d distributed training %r", device, n_gpu,
+                bool(args.local_rank != -1))
 
     if args.gradient_accumulation_steps < 1:
         raise ValueError("Invalid gradient_accumulation_steps parameter: {}, should be >= 1".format(
-                            args.gradient_accumulation_steps))
+            args.gradient_accumulation_steps))
 
     args.train_batch_size = int(args.train_batch_size / args.gradient_accumulation_steps)
 
@@ -843,7 +852,8 @@ def main():
         raise ValueError("At least one of `do_train` or `do_eval` must be True.")
 
     if os.path.exists(args.output_dir) and os.listdir(args.output_dir) and args.do_train:
-        raise ValueError("Output directory ({}) already exists and is not empty.".format(args.output_dir))
+        raise ValueError(
+            "Output directory ({}) already exists and is not empty.".format(args.output_dir))
     os.makedirs(args.output_dir, exist_ok=True)
 
     task_name = args.task_name.lower()
@@ -861,7 +871,8 @@ def main():
     if args.do_train:
         train_examples = processor.get_train_examples(args.data_dir)
         num_train_steps = int(
-            len(train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
+            len(
+                train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
     model = BertForMultipleChoice.from_pretrained(args.bert_model,
@@ -880,17 +891,17 @@ def main():
     # Prepare optimizer
     if args.fp16:
         param_optimizer = [(n, param.clone().detach().to('cpu').float().requires_grad_()) \
-                            for n, param in model.named_parameters()]
+                           for n, param in model.named_parameters()]
     elif args.optimize_on_cpu:
         param_optimizer = [(n, param.clone().detach().to('cpu').requires_grad_()) \
-                            for n, param in model.named_parameters()]
+                           for n, param in model.named_parameters()]
     else:
         param_optimizer = list(model.named_parameters())
     no_decay = ['bias', 'gamma', 'beta']
     optimizer_grouped_parameters = [
         {'params': [p for n, p in param_optimizer if n not in no_decay], 'weight_decay_rate': 0.01},
         {'params': [p for n, p in param_optimizer if n in no_decay], 'weight_decay_rate': 0.0}
-        ]
+    ]
     optimizer = BertAdam(optimizer_grouped_parameters,
                          lr=args.learning_rate,
                          warmup=args.warmup_proportion,
@@ -920,7 +931,8 @@ def main():
             train_sampler = RandomSampler(train_data)
         else:
             train_sampler = DistributedSampler(train_data)
-        train_dataloader = DataLoader(train_data, sampler=train_sampler, batch_size=args.train_batch_size)
+        train_dataloader = DataLoader(train_data, sampler=train_sampler,
+                                      batch_size=args.train_batch_size)
 
         model.train()
         for _ in trange(int(args.num_train_epochs), desc="Epoch"):
@@ -932,7 +944,7 @@ def main():
                 input_ids, input_mask, segment_ids, label_ids = batch
                 loss, _ = model(input_ids, segment_ids, input_mask, label_ids)
                 if n_gpu > 1:
-                    loss = loss.mean() # mean() to average on multi-gpu.
+                    loss = loss.mean()  # mean() to average on multi-gpu.
                 if args.fp16 and args.loss_scale != 1.0:
                     # rescale loss for fp16 training
                     # see https://docs.nvidia.com/deeplearning/sdk/mixed-precision-training/index.html
@@ -949,7 +961,8 @@ def main():
                             # scale down gradients for fp16 training
                             for param in model.parameters():
                                 param.grad.data = param.grad.data / args.loss_scale
-                        is_nan = set_optimizer_params_grad(param_optimizer, model.named_parameters(), test_nan=True)
+                        is_nan = set_optimizer_params_grad(param_optimizer,
+                                                           model.named_parameters(), test_nan=True)
                         if is_nan:
                             logger.info("FP16 TRAINING: Nan in gradients, reducing loss scaling")
                             args.loss_scale = args.loss_scale / 2
@@ -962,7 +975,7 @@ def main():
                     model.zero_grad()
                     global_step += 1
                 status_tqdm.set_description_str("Iteration / Training Loss: {}".format((tr_loss /
-                                                                                       nb_tr_examples)))
+                                                                                        nb_tr_examples)))
 
         torch.save(model, model_save_path)
 
@@ -989,7 +1002,8 @@ def main():
             eval_sampler = SequentialSampler(eval_data)
         else:
             eval_sampler = DistributedSampler(eval_data)
-        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
+        eval_dataloader = DataLoader(eval_data, sampler=eval_sampler,
+                                     batch_size=args.eval_batch_size)
 
         logger.info("***** Loading model from: {} *****".format(model_save_path))
         model = torch.load(model_save_path)
@@ -1032,7 +1046,7 @@ def main():
         result = {'eval_loss': eval_loss,
                   'eval_accuracy': eval_accuracy,
                   'global_step': global_step,
-                  'loss': tr_loss/nb_tr_steps if tr_loss is not None else 0.0
+                  'loss': tr_loss / nb_tr_steps if tr_loss is not None else 0.0
                   }
 
         output_eval_file = os.path.join(args.output_dir, "eval_results.txt")
