@@ -810,7 +810,8 @@ def main():
         "mnli": MnliProcessor,
         "mrpc": MrpcProcessor,
         "anli": AnliProcessor,
-        "anli3": AnliProcessor3Option
+        "anli3": AnliProcessor3Option,
+        'anli_csk': AnliWithCSKProcessor
     }
 
     if args.local_rank == -1 or args.no_cuda:
