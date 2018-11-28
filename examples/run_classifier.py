@@ -319,31 +319,29 @@ class AnliWithCSKProcessor(DataProcessor):
             beginning = record['InputSentence1']
             ending = record['InputSentence5']
 
-            option1_middle = record['RandomMiddleSentenceQuiz1']
-            option2_middle = record['RandomMiddleSentenceQuiz2']
-            option3_middle = record['RandomMiddleSentenceQuiz3']
-            option4_middle = record['RandomMiddleSentenceQuiz4']
+            option1_middle = beginning + " " + record['RandomMiddleSentenceQuiz1']
+            option2_middle = beginning + " " + record['RandomMiddleSentenceQuiz2']
+            option3_middle = beginning + " " + record['RandomMiddleSentenceQuiz3']
+            option4_middle = beginning + " " + record['RandomMiddleSentenceQuiz4']
 
-            option1_csk = record['CSK1']
-            option2_csk = record['CSK2']
-            option3_csk = record['CSK3']
-            option4_csk = record['CSK4']
+            option1_csk = ending + " " + record['CSK1']
+            option2_csk = ending + " " + record['CSK2']
+            option3_csk = ending + " " + record['CSK3']
+            option4_csk = ending + " " + record['CSK4']
 
             answer = int(record['AnswerRightEnding']) - 1
 
             label = convert_to_unicode(str(answer))
 
-            text_a = [beginning, beginning, beginning, beginning]
-            text_b = [option1_middle, option2_middle, option3_middle, option4_middle]
-            text_c = [ending, ending, ending, ending]
-            text_d = [option1_csk, option2_csk, option3_csk, option4_csk]
+            text_a = [option1_middle, option2_middle, option3_middle, option4_middle]
+            text_b = [option1_csk, option2_csk, option3_csk, option4_csk]
 
             examples.append(
                 InputExampleWithListFourFields(guid=guid,
                                                text_a=text_a,
                                                text_b=text_b,
-                                               text_c=text_c,
-                                               text_d=text_d,
+                                               text_c=None,
+                                               text_d=None,
                                                label=label
                                                )
             )
