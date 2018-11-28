@@ -88,6 +88,36 @@ class InputExampleWithList(object):
         self.label = label
 
 
+class InputExampleWithListFourFields(object):
+    """A single training/test example for simple multiple choice classification."""
+
+    def __init__(self, guid, text_a, text_b, text_c, text_d, label=None):
+        """Constructs a InputExample.
+
+        Args:
+            guid: Unique id for the example.
+            text_a: list. A list containing untokenized text
+            text_b: list. containing untokenized text associated of the same size as text_A
+            text_c: list. containing untokenized text associated of the same size as text_A
+            text_d: list. containing untokenized text associated of the same size as text_A
+            Only must be specified for multiple choice options.
+            label: (Optional) string. The label of the example. This should be
+            specified for train and dev examples, but not for test examples.
+        """
+        assert isinstance(text_a, list)
+        assert isinstance(text_b, list)
+        assert isinstance(text_c, list)
+        assert isinstance(text_d, list)
+        assert len(text_a) == len(text_b) == len(text_c) == len(text_d)
+
+        self.guid = guid
+        self.text_a = text_a
+        self.text_b = text_b
+        self.text_c = text_c
+        self.text_d = text_d
+        self.label = label
+
+
 class InputFeatures(object):
     """A single set of features of data."""
 
@@ -242,6 +272,74 @@ class AnliProcessor3Option(DataProcessor):
                                      text_b=text_b,
                                      label=label
                                      )
+            )
+        return examples
+
+
+class AnliWithCSKProcessor(DataProcessor):
+    """Processor for the ANLI data set."""
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.jsonl")))
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "train.jsonl")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "valid.jsonl")), "dev")
+
+    def get_test_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "test.jsonl")), "test")
+
+    def get_examples_from_file(self, input_file):
+        return self._create_examples(
+            self._read_jsonl(input_file, "to-pred")
+        )
+
+    def get_labels(self):
+        """See base class."""
+        return ["0", "1", "2", "3"]
+
+    def _create_examples(self, records, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, record) in enumerate(records):
+            guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
+
+            beginning = record['InputSentence1']
+            ending = record['InputSentence5']
+
+            option1_middle = record['RandomMiddleSentenceQuiz1']
+            option2_middle = record['RandomMiddleSentenceQuiz2']
+            option3_middle = record['RandomMiddleSentenceQuiz3']
+            option4_middle = record['RandomMiddleSentenceQuiz4']
+
+            option1_csk = record['CSK1']
+            option2_csk = record['CSK2']
+            option3_csk = record['CSK3']
+            option4_csk = record['CSK4']
+
+            answer = int(record['AnswerRightEnding']) - 1
+
+            label = convert_to_unicode(str(answer))
+
+            text_a = [beginning, beginning, beginning, beginning]
+            text_b = [option1_middle, option2_middle, option3_middle, option4_middle]
+            text_c = [ending, ending, ending, ending]
+            text_d = [option1_csk, option2_csk, option3_csk, option4_csk]
+
+            examples.append(
+                InputExampleWithListFourFields(guid=guid,
+                                               text_a=text_a,
+                                               text_b=text_b,
+                                               text_c=text_c,
+                                               text_d=text_d,
+                                               label=label
+                                               )
             )
         return examples
 
@@ -446,61 +544,53 @@ def convert_examples_to_features_mc(examples, label_list, max_seq_length, tokeni
 
     features = []
     for (ex_index, example) in enumerate(examples):
+        inputs = []
+
         tokens_a = [tokenizer.tokenize(t) for t in example.text_a]
+        inputs.append(tokens_a)
 
         tokens_b = None
         if example.text_b:
             tokens_b = [tokenizer.tokenize(t) for t in example.text_b]
+            inputs.append(tokens_b)
 
-        if tokens_b:
+        tokens_c = None
+        if example.text_c:
+            tokens_c = [tokenizer.tokenize(t) for t in example.text_c]
+            inputs.append(tokens_c)
+
+        tokens_d = None
+        if example.text_d:
+            tokens_d = [tokenizer.tokenize(t) for t in example.text_d]
+            inputs.append(tokens_d)
+
+        if len(inputs) > 1:
             # Modifies `tokens_a` and `tokens_b` in place so that the total
             # length is less than the specified length.
             # Account for [CLS], [SEP], [SEP] with "- 3"
-            for ta, tb in zip(tokens_a, tokens_b):
-                _truncate_seq_pair(ta, tb, max_seq_length - 3)
+            adjusted_len = max_seq_length - len(inputs) - 1
+            _truncate_sequences(adjusted_len, inputs)
         else:
             # Account for [CLS] and [SEP] with "- 2"
             for idx, ta in enumerate(tokens_a):
                 tokens_a[idx] = tokens_a[idx][0:(max_seq_length - 2)]
 
-        # The convention in BERT is:
-        # (a) For sequence pairs:
-        #  tokens:   [CLS] is this jack ##son ##ville ? [SEP] no it is not . [SEP]
-        #  type_ids: 0   0  0    0    0     0       0 0    1  1  1  1   1 1
-        # (b) For single sequences:
-        #  tokens:   [CLS] the dog is hairy . [SEP]
-        #  type_ids: 0   0   0   0  0     0 0
-        #
-        # Where "type_ids" are used to indicate whether this is the first
-        # sequence or the second sequence. The embedding vectors for `type=0` and
-        # `type=1` were learned during pre-training and are added to the wordpiece
-        # embedding vector (and position vector). This is not *strictly* necessary
-        # since the [SEP] token unambigiously separates the sequences, but it makes
-        # it easier for the model to learn the concept of sequences.
-        #
-        # For classification tasks, the first vector (corresponding to [CLS]) is
-        # used as as the "sentence vector". Note that this only makes sense because
-        # the entire model is fine-tuned.
         all_tokens = []
         all_token_ids = []
         all_segments = []
         all_masks = []
-        for a, b in zip(tokens_a, tokens_b):
+        for zipped_tokens in zip(*inputs):
             tokens = []
             segment_ids = []
             tokens.append("[CLS]")
             segment_ids.append(0)
-            for token in a:
-                tokens.append(token)
-                segment_ids.append(0)
-            tokens.append("[SEP]")
-            segment_ids.append(0)
 
-            for token in b:
-                tokens.append(token)
-                segment_ids.append(1)
-            tokens.append("[SEP]")
-            segment_ids.append(1)
+            for idx, field in enumerate(zipped_tokens):
+                for token in field:
+                    tokens.append(token)
+                    segment_ids.append(idx)
+                tokens.append("[SEP]")
+                segment_ids.append(idx)
 
             input_ids = tokenizer.convert_tokens_to_ids(tokens)
 
@@ -525,14 +615,25 @@ def convert_examples_to_features_mc(examples, label_list, max_seq_length, tokeni
 
         label_id = label_map[example.label]
         if ex_index < 5:
-            logger.info("*** Example ***")
+            logger.info("\n\n")
+            logger.info("*** Example {} ***\n".format(ex_index))
             logger.info("guid: %s" % (example.guid))
-            logger.info("tokens: %s" % " ".join(
-                [printable_text(x) for x in all_tokens[0]]))
-            logger.info("input_ids: %s" % " ".join([str(x) for x in all_token_ids[0]]))
-            logger.info("input_mask: %s" % " ".join([str(x) for x in all_masks[0]]))
-            logger.info(
-                "segment_ids: %s" % " ".join([str(x) for x in all_segments[0]]))
+            _ts = all_tokens
+            _ids = all_token_ids
+            _masks = all_masks
+            _segs = all_segments
+
+            logger.info("\n")
+
+            for idx, (_t, _id, _mask, _seg) in enumerate(zip(_ts, _ids, _masks, _segs)):
+                logger.info("\tOption {}".format(idx))
+                logger.info("\ttokens: %s" % " ".join(
+                    [printable_text(x) for x in _t]))
+                logger.info("\tinput_ids: %s" % " ".join([str(x) for x in _id]))
+                logger.info("\tinput_mask: %s" % " ".join([str(x) for x in _mask]))
+                logger.info(
+                    "\tsegment_ids: %s" % " ".join([str(x) for x in _seg]))
+
             logger.info("label: %s (id = %d)" % (example.label, label_id))
 
         features.append(
@@ -558,6 +659,17 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
             tokens_a.pop()
         else:
             tokens_b.pop()
+
+
+def _truncate_sequences(max_length, inputs):
+    idx = 0
+    while True:
+        total_length = sum([len(tokens) for tokens in inputs])
+        if total_length <= max_length:
+            break
+        max_len_field = int(np.argmax([len(tokens) for tokens in inputs]))
+        inputs[max_len_field].pop()
+
 
 def accuracy(out, labels):
     outputs = np.argmax(out, axis=1)
