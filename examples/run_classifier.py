@@ -108,7 +108,11 @@ class InputExampleWithListFourFields(object):
         assert isinstance(text_b, list)
         assert text_c is None or isinstance(text_c, list)
         assert text_d is None or isinstance(text_d, list)
-        assert len(text_a) == len(text_b) == len(text_c) == len(text_d)
+        assert len(text_a) == len(text_b)
+        if text_c is not None:
+            assert len(text_c) == len(text_a)
+        if text_d is not None:
+            assert len(text_d) == len(text_a)
 
         self.guid = guid
         self.text_a = text_a
