@@ -324,10 +324,10 @@ class AnliWithCSKProcessor(DataProcessor):
             option3_middle = beginning + " " + record['RandomMiddleSentenceQuiz3']
             option4_middle = beginning + " " + record['RandomMiddleSentenceQuiz4']
 
-            option1_csk = ending + " " + record['CSK1']
-            option2_csk = ending + " " + record['CSK2']
-            option3_csk = ending + " " + record['CSK3']
-            option4_csk = ending + " " + record['CSK4']
+            option1_csk = ending + " Because , " + record['CSK1']
+            option2_csk = ending + " Because , " + record['CSK2']
+            option3_csk = ending + " Because , " + record['CSK3']
+            option4_csk = ending + " Because , " + record['CSK4']
 
             answer = int(record['AnswerRightEnding']) - 1
 
