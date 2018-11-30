@@ -313,28 +313,25 @@ class AnliWithCSKProcessor(DataProcessor):
     def _create_examples(self, records, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
+        num_fields = len([x for x in list(records[0].keys()) if x.startswith('RandomMiddleSentenceQuiz')])
         for (i, record) in enumerate(records):
             guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
 
             beginning = record['InputSentence1']
             ending = record['InputSentence5']
 
-            option1_middle = beginning + " " + record['RandomMiddleSentenceQuiz1']
-            option2_middle = beginning + " " + record['RandomMiddleSentenceQuiz2']
-            option3_middle = beginning + " " + record['RandomMiddleSentenceQuiz3']
-            option4_middle = beginning + " " + record['RandomMiddleSentenceQuiz4']
-
-            option1_csk = ending + " Because , " + record['CSK1']
-            option2_csk = ending + " Because , " + record['CSK2']
-            option3_csk = ending + " Because , " + record['CSK3']
-            option4_csk = ending + " Because , " + record['CSK4']
+            text_a = []
+            text_b = []
+            for idx in range(1, num_fields + 1):
+                text_a.append(
+                    beginning + " " + record["RandomMiddleSentenceQuiz" + str(idx)]
+                )
+                text_b.append(
+                    ending + " Because , " + record['CSK' + str(idx)]
+                )
 
             answer = int(record['AnswerRightEnding']) - 1
-
             label = convert_to_unicode(str(answer))
-
-            text_a = [option1_middle, option2_middle, option3_middle, option4_middle]
-            text_b = [option1_csk, option2_csk, option3_csk, option4_csk]
 
             examples.append(
                 InputExampleWithListFourFields(guid=guid,
