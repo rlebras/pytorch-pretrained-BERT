@@ -284,6 +284,8 @@ class AnliProcessor3Option(DataProcessor):
 
 class AnliWithCSKProcessor(DataProcessor):
     """Processor for the ANLI data set."""
+    def __init__(self):
+        self._labels = []
 
     def get_train_examples(self, data_dir):
         """See base class."""
@@ -308,12 +310,13 @@ class AnliWithCSKProcessor(DataProcessor):
 
     def get_labels(self):
         """See base class."""
-        return ["0", "1", "2", "3"]
+        return [str(idx) for idx in range(1, 9)]
 
     def _create_examples(self, records, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
         num_fields = len([x for x in list(records[0].keys()) if x.startswith('RandomMiddleSentenceQuiz')])
+        self._labels = [str(idx) for idx in range(1, num_fields + 1)]
         for (i, record) in enumerate(records):
             guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
 
