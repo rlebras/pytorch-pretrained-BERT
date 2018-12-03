@@ -310,7 +310,7 @@ class AnliWithCSKProcessor(DataProcessor):
 
     def get_labels(self):
         """See base class."""
-        return [str(idx) for idx in range(8)]
+        return [str(idx) for idx in range(16)]
 
     def _create_examples(self, records, set_type):
         """Creates examples for the training and dev sets."""
