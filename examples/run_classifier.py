@@ -608,6 +608,8 @@ def convert_examples_to_features_mc(examples, label_list, max_seq_length, tokeni
                 input_mask.append(0)
                 segment_ids.append(0)
 
+            if len(input_ids) != max_seq_length:
+                print("FOUND")
             assert len(input_ids) == max_seq_length
             assert len(input_mask) == max_seq_length
             assert len(segment_ids) == max_seq_length
