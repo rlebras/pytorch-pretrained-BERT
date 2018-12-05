@@ -671,14 +671,13 @@ def _truncate_sequences(max_length, inputs):
     idx = 0
     while True:
         for ta, tb in zip(inputs[0], inputs[1]):
-            for a, b in zip(ta, tb):
-                total_length = len(a) + len(b)
-                if total_length <= max_length:
-                    break
-                if len(a) > len(b):
-                    a.pop()
-                else:
-                    b.pop()
+            total_length = len(ta) + len(tb)
+            if total_length <= max_length:
+                break
+            if len(ta) > len(tb):
+                ta.pop()
+            else:
+                tb.pop()
 
 
 def accuracy(out, labels):
