@@ -670,11 +670,15 @@ def _truncate_seq_pair(tokens_a, tokens_b, max_length):
 def _truncate_sequences(max_length, inputs):
     idx = 0
     while True:
-        total_length = sum([len(tokens) for tokens in inputs])
-        if total_length <= max_length:
-            break
-        max_len_field = int(np.argmax([len(tokens) for tokens in inputs]))
-        inputs[max_len_field].pop()
+        for ta, tb in zip(inputs[0], inputs[1]):
+            for a, b in zip(ta, tb):
+                total_length = len(a) + len(b)
+                if total_length <= max_length:
+                    break
+                if len(a) > len(b):
+                    a.pop()
+                else:
+                    b.pop()
 
 
 def accuracy(out, labels):
