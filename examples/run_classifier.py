@@ -463,15 +463,23 @@ class BinaryAnli(DataProcessor):
         """See base class."""
         return ["0", "1"]
 
-    def _create_examples(self, lines, set_type):
+    def _create_examples(self, records, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
-        for (i, line) in enumerate(lines):
-            guid = "%s-%s" % (set_type, i)
-            text_a = convert_to_unicode(line[3])
-            label = convert_to_unicode(line[1])
+        for (i, record) in enumerate(records):
+
+            guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
+
+            beginning = record['InputSentence1']
+            ending = record['InputSentence5']
+            middle = record['RandomMiddleSentenceQuiz1']
+            label = int(record['AnswerRightEnding'])
+
+            text_a = convert_to_unicode(beginning)
+            text_b = convert_to_unicode(middle + " " + ending)
+
             examples.append(
-                InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+                InputExample(guid=guid, text_a=text_a, text_b=text_b, label=label))
         return examples
 
 
