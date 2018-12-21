@@ -32,6 +32,7 @@ from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm, trange
 
 from examples.run_squad import _compute_softmax
+from pytorch_pretrained_bert import BertForSequenceClassification
 from pytorch_pretrained_bert.file_utils import read_jsonl_lines, write_items
 from pytorch_pretrained_bert.modeling import BertForMultipleChoice
 from pytorch_pretrained_bert.optimization import BertAdam
@@ -284,6 +285,7 @@ class AnliProcessor3Option(DataProcessor):
 
 class AnliWithCSKProcessor(DataProcessor):
     """Processor for the ANLI data set."""
+
     def __init__(self):
         self._labels = []
 
@@ -315,7 +317,8 @@ class AnliWithCSKProcessor(DataProcessor):
     def _create_examples(self, records, set_type):
         """Creates examples for the training and dev sets."""
         examples = []
-        num_fields = len([x for x in list(records[0].keys()) if x.startswith('RandomMiddleSentenceQuiz')])
+        num_fields = len(
+            [x for x in list(records[0].keys()) if x.startswith('RandomMiddleSentenceQuiz')])
         self._labels = [str(idx) for idx in range(1, num_fields + 1)]
         for (i, record) in enumerate(records):
             guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
@@ -426,6 +429,35 @@ class ColaProcessor(DataProcessor):
         """See base class."""
         return self._create_examples(
             self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+
+    def get_labels(self):
+        """See base class."""
+        return ["0", "1"]
+
+    def _create_examples(self, lines, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, line) in enumerate(lines):
+            guid = "%s-%s" % (set_type, i)
+            text_a = convert_to_unicode(line[3])
+            label = convert_to_unicode(line[1])
+            examples.append(
+                InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+        return examples
+
+
+class BinaryAnli(DataProcessor):
+    """Processor for the CoLA data set (GLUE version)."""
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "train-binary.jsonl")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_jsonl(os.path.join(data_dir, "valid-binary.tsv")), "dev")
 
     def get_labels(self):
         """See base class."""
@@ -819,7 +851,8 @@ def main():
         "mrpc": MrpcProcessor,
         "anli": AnliProcessor,
         "anli3": AnliProcessor3Option,
-        'anli_csk': AnliWithCSKProcessor
+        'anli_csk': AnliWithCSKProcessor,
+        'bin_anli': BinaryAnli
     }
 
     if args.local_rank == -1 or args.no_cuda:
@@ -875,10 +908,13 @@ def main():
                 train_examples) / args.train_batch_size / args.gradient_accumulation_steps * args.num_train_epochs)
 
     # Prepare model
-    model = BertForMultipleChoice.from_pretrained(args.bert_model,
-                                                  len(label_list),
-                                                  len(label_list)
-                                                  )
+    if task_name == 'bin_anli':
+        model = BertForSequenceClassification.from_pretrained(args.bert_model, len(label_list))
+    else:
+        model = BertForMultipleChoice.from_pretrained(args.bert_model,
+                                                      len(label_list),
+                                                      len(label_list)
+                                                      )
     if args.fp16:
         model.half()
     model.to(device)
