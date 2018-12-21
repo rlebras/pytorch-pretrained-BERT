@@ -468,7 +468,7 @@ class BinaryAnli(DataProcessor):
         examples = []
         for (i, record) in enumerate(records):
 
-            guid = "%s-%s-%s" % (set_type, record['InputStoryid'], record['ending'])
+            guid = "%s-%s" % (set_type, i)
 
             beginning = record['InputSentence1']
             ending = record['InputSentence5']
