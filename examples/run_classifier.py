@@ -473,7 +473,7 @@ class BinaryAnli(DataProcessor):
             beginning = record['InputSentence1']
             ending = record['InputSentence5']
             middle = record['RandomMiddleSentenceQuiz1']
-            label = int(record['AnswerRightEnding'])
+            label = str(record['AnswerRightEnding'])
 
             text_a = convert_to_unicode(beginning)
             text_b = convert_to_unicode(middle + " " + ending)
