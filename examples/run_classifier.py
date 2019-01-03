@@ -1011,7 +1011,7 @@ def main():
     model_save_path = os.path.join(args.output_dir, "bert-finetuned.model")
     tr_loss = None
     if args.do_train:
-        if task_name.lower().startswith("anli"):
+        if task_name.lower().startswith("anli") or task_name.lower().startswith("wsc"):
             train_features = convert_examples_to_features_mc(
                 train_examples, label_list, args.max_seq_length, tokenizer)
         else:
