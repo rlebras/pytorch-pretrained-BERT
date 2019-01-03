@@ -88,6 +88,9 @@ class InputExampleWithList(object):
         self.text_b = text_b
         self.label = label
 
+        self.text_c = None
+        self.text_d = None
+
 
 class InputExampleWithListFourFields(object):
     """A single training/test example for simple multiple choice classification."""
