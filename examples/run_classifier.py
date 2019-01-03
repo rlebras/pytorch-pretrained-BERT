@@ -395,7 +395,7 @@ class WSCProcessor(DataProcessor):
             text_a = [context, context]
             text_b = [option1, option2]
 
-            label = convert_to_unicode(line[0])
+            label = convert_to_unicode(line[5])
 
             examples.append(
                 InputExampleWithList(
