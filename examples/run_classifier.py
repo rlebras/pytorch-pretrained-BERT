@@ -350,6 +350,60 @@ class AnliWithCSKProcessor(DataProcessor):
             )
         return examples
 
+class WSCProcessor(DataProcessor):
+    """Processor for the MRPC data set (GLUE version)."""
+
+    def get_train_examples(self, data_dir):
+        """See base class."""
+        logger.info("LOOKING AT {}".format(os.path.join(data_dir, "train.tsv")))
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
+    def get_dev_examples(self, data_dir):
+        """See base class."""
+        return self._create_examples(
+            self._read_tsv(os.path.join(data_dir, "test.tsv")), "dev")
+
+    def get_labels(self):
+        """See base class."""
+        return ["1", "2"]
+
+    def _create_examples(self, lines, set_type):
+        """Creates examples for the training and dev sets."""
+        examples = []
+        for (i, line) in enumerate(lines):
+            if i == 0:
+                continue
+            guid = "%s-%s" % (set_type, i)
+            sentence = convert_to_unicode(line[1])
+            conj = convert_to_unicode(line[2])
+
+            idx = sentence.index(conj)
+
+            context = sentence[:idx + len(conj)]
+            option_str = sentence[idx + len(conj):].strip()
+
+            name1 = convert_to_unicode(line[3])
+            name2 = convert_to_unicode(line[4])
+
+            option1 = option_str.replace("_", name1)
+            option2 = option_str.replace("_", name2)
+
+            text_a = [context, context]
+            text_b = [option1, option2]
+
+            label = convert_to_unicode(line[0])
+
+            examples.append(
+                InputExampleWithList(
+                    guid=guid,
+                    text_a=text_a,
+                    text_b=text_b,
+                    label=label
+                )
+            )
+        return examples
+
 
 class MrpcProcessor(DataProcessor):
     """Processor for the MRPC data set (GLUE version)."""
@@ -860,7 +914,8 @@ def main():
         "anli": AnliProcessor,
         "anli3": AnliProcessor3Option,
         'anli_csk': AnliWithCSKProcessor,
-        'bin_anli': BinaryAnli
+        'bin_anli': BinaryAnli,
+        'wsc': WSCProcessor
     }
 
     if args.local_rank == -1 or args.no_cuda:
