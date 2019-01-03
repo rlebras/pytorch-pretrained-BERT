@@ -378,7 +378,7 @@ class WSCProcessor(DataProcessor):
             if i == 0:
                 continue
             guid = "%s-%s" % (set_type, i)
-            sentence = convert_to_unicode(line[1])
+            sentence = convert_to_unicode(line[1]).replace("\"", "")
             conj = convert_to_unicode(line[2])
 
             idx = sentence.index(conj)
@@ -1086,7 +1086,7 @@ def main():
             eval_examples = processor.get_examples_from_file(args.input_file_for_pred)
         else:
             eval_examples = processor.get_dev_examples(args.data_dir)
-        if task_name.lower().startswith("anli"):
+        if task_name.lower().startswith("anli") or task_name.lower().startswith("wsc"):
             eval_features = convert_examples_to_features_mc(
                 eval_examples, label_list, args.max_seq_length, tokenizer)
         else:
