@@ -407,6 +407,10 @@ class WSCProcessor(DataProcessor):
             )
         return examples
 
+    def get_examples_from_file(self, input_file):
+        return self._create_examples(
+            self._read_tsv(input_file), "to-pred")
+
 
 class MrpcProcessor(DataProcessor):
     """Processor for the MRPC data set (GLUE version)."""
