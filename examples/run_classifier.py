@@ -223,6 +223,9 @@ class AnliProcessor(DataProcessor):
             )
         return examples
 
+    def label_field(self):
+        return "AnswerRightEnding"
+
 
 class AnliProcessor3Option(DataProcessor):
     """Processor for the ANLI data set."""
@@ -284,6 +287,9 @@ class AnliProcessor3Option(DataProcessor):
                                      )
             )
         return examples
+
+    def label_field(self):
+        return "AnswerRightEnding"
 
 
 class AnliWithCSKProcessor(DataProcessor):
@@ -353,6 +359,9 @@ class AnliWithCSKProcessor(DataProcessor):
             )
         return examples
 
+    def label_field(self):
+        return "AnswerRightEnding"
+
 class WSCProcessor(DataProcessor):
     """Processor for the MRPC data set (GLUE version)."""
 
@@ -410,6 +419,9 @@ class WSCProcessor(DataProcessor):
     def get_examples_from_file(self, input_file):
         return self._create_examples(
             self._read_tsv(input_file), "to-pred")
+
+    def label_field(self):
+        return "answer"
 
 
 class MrpcProcessor(DataProcessor):
@@ -1173,7 +1185,7 @@ def main():
         logger.info("***** Eval predictions *****")
         for record, pred, probs in zip(pred_examples, eval_predictions, eval_pred_probs):
             record['bert_prediction'] = pred
-            record['bert_correct'] = pred == (int(record['AnswerRightEnding']) - 1)
+            record['bert_correct'] = pred == (int(record[processor.label_field()]) - 1)
             record['bert_pred_probs'] = probs
 
         write_items([json.dumps(r) for r in pred_examples], args.output_file_for_pred)
