@@ -33,7 +33,7 @@ from tqdm import tqdm, trange
 
 from examples.run_squad import _compute_softmax
 from pytorch_pretrained_bert import BertForSequenceClassification
-from pytorch_pretrained_bert.file_utils import read_jsonl_lines, write_items
+from pytorch_pretrained_bert.file_utils import read_jsonl_lines, write_items, TsvIO
 from pytorch_pretrained_bert.modeling import BertForMultipleChoice
 from pytorch_pretrained_bert.optimization import BertAdam
 from pytorch_pretrained_bert.tokenization import printable_text, convert_to_unicode, BertTokenizer
@@ -1162,7 +1162,13 @@ def main():
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        pred_examples = processor.get_examples_from_file(args.input_file_for_pred)
+        if task_name == "wsc":
+            pred_examples = TsvIO.read(args.input_file_for_pred, known_schema=[
+                "qID","sentence","conj","option1","option2","answer","template","gender"
+            ])
+
+        else:
+            pred_examples = read_jsonl_lines(args.input_file_for_pred)
 
         logger.info("***** Eval predictions *****")
         for record, pred, probs in zip(pred_examples, eval_predictions, eval_pred_probs):
