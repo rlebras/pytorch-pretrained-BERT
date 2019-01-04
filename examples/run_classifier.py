@@ -1162,7 +1162,7 @@ def main():
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        pred_examples = read_jsonl_lines(args.input_file_for_pred)
+        pred_examples = processor.get_examples_from_file(args.input_file_for_pred)
 
         logger.info("***** Eval predictions *****")
         for record, pred, probs in zip(pred_examples, eval_predictions, eval_pred_probs):
