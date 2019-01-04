@@ -1175,7 +1175,7 @@ def main():
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
         if task_name == "wsc":
-            pred_examples = TsvIO.read(args.input_file_for_pred)
+            pred_examples = list(TsvIO.read(args.input_file_for_pred))
 
         else:
             pred_examples = read_jsonl_lines(args.input_file_for_pred)
