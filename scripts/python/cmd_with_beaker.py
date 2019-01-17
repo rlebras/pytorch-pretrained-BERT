@@ -42,7 +42,9 @@ def main(args: argparse.Namespace):
         blueprint = subprocess.check_output(f'beaker blueprint create --quiet {image}', shell=True, universal_newlines=True).strip()
         print(f"  Blueprint created: {blueprint}")
 
-    cmd = 'python /scripts/python/grid_search.py --data_dir /data/ --models_base_dir /output/ --task_name anli --output_dir /output/'
+    #cmd = 'python /scripts/python/grid_search.py --data_dir /data/ --models_base_dir /output/ --task_name wsc --output_dir /output/'
+    cmd = args.cmd
+    print("Command:", cmd)
     allennlp_command = cmd.split()
 
     dataset_mounts = []
@@ -106,6 +108,7 @@ if __name__ == "__main__":
     parser.add_argument('--dry-run', action='store_true', help='If specified, an experiment will not be created.')
     parser.add_argument('--blueprint', type=str, help='The Blueprint to use (if unspecified one will be built)')
     parser.add_argument('--desc', type=str, help='A description for the experiment.')
+    parser.add_argument('--cmd', type=str, help='The command to run.')
     parser.add_argument('--env', action='append', default=[], help='Set environment variables (e.g. NAME=value or NAME)')
     parser.add_argument('--source', action='append', default=[], help='Bind a remote data source (e.g. source-id:/target/path)')
     parser.add_argument('--cpu', help='CPUs to reserve for this experiment (e.g., 0.5)')
