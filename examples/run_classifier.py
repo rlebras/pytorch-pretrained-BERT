@@ -1174,19 +1174,24 @@ def main():
                 logger.info("  %s = %s", key, str(result[key]))
                 writer.write("%s = %s\n" % (key, str(result[key])))
 
-        if task_name == "wsc":
-            pred_examples = list(TsvIO.read(args.input_file_for_pred))
+        output_eval_json_file = os.path.join(args.output_dir, "../metrics.json")
+        with open(output_eval_json_file, 'w') as fp:
+            json.dump(result, fp)
 
-        else:
-            pred_examples = read_jsonl_lines(args.input_file_for_pred)
+        if args.input_file_for_pred:
+            if task_name == "wsc":
+                pred_examples = list(TsvIO.read(args.input_file_for_pred))
 
-        logger.info("***** Eval predictions *****")
-        for record, pred, probs in zip(pred_examples, eval_predictions, eval_pred_probs):
-            record['bert_prediction'] = pred
-            record['bert_correct'] = pred == (int(record[processor.label_field()]) - 1)
-            record['bert_pred_probs'] = probs
+            else:
+                pred_examples = read_jsonl_lines(args.input_file_for_pred)
 
-        write_items([json.dumps(r) for r in pred_examples], args.output_file_for_pred)
+            logger.info("***** Eval predictions *****")
+            for record, pred, probs in zip(pred_examples, eval_predictions, eval_pred_probs):
+                record['bert_prediction'] = pred
+                record['bert_correct'] = pred == (int(record[processor.label_field()]) - 1)
+                record['bert_pred_probs'] = probs
+
+            write_items([json.dumps(r) for r in pred_examples], args.output_file_for_pred)
 
 
 if __name__ == "__main__":
